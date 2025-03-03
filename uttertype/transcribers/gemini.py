@@ -4,12 +4,23 @@ Google Gemini API transcriber implementation.
 
 import os
 import io
+import sys
+import threading
 from typing import Optional, Any
 from textwrap import dedent
 from pydantic import BaseModel
 from google import genai
 from google.genai import types
 from uttertype.transcribers.base import AudioTranscriber
+
+# Conditionally import the context_screenshot module
+if sys.platform == 'darwin':
+    try:
+        from uttertype.context_screenshot import capture_active_window
+    except ImportError:
+        capture_active_window = None
+else:
+    capture_active_window = None
 
 class GeminiTranscriber(AudioTranscriber):
     """
@@ -51,7 +62,30 @@ class GeminiTranscriber(AudioTranscriber):
             self.client = genai.Client(api_key=api_key)
         
         self.model_name = model
-        self.use_context_screenshot = use_context_screenshot
+        self.use_context_screenshot = use_context_screenshot and capture_active_window is not None
+        self.context_screenshot = None  # Will store the screenshot taken at recording start
+        
+    def start_recording(self):
+        """
+        Override to capture a screenshot when recording starts.
+        """
+        # Only capture screenshot if the feature is enabled
+        if self.use_context_screenshot:
+            # Capture screenshot in a background thread to avoid adding latency
+            threading.Thread(target=self._capture_screenshot_background).start()
+            
+        # Call the parent implementation to start recording
+        super().start_recording()
+        
+    def _capture_screenshot_background(self):
+        """
+        Capture a screenshot in a background thread.
+        """
+        try:
+            self.context_screenshot = capture_active_window()
+        except Exception as e:
+            print(f"Error capturing screenshot: {e}")
+            self.context_screenshot = None
         self.prompt = dedent("""\
         Audio Transcription Guidelines
 
@@ -122,6 +156,10 @@ class GeminiTranscriber(AudioTranscriber):
             
         Returns:
             Transcription as text
+            
+        Note:
+            If context_screenshot is enabled, the screenshot captured at the start
+            of recording will be included with each audio segment.
         """
         try:
             # Get the audio bytes directly from the BytesIO object
@@ -134,20 +172,16 @@ class GeminiTranscriber(AudioTranscriber):
             # Prepare the content parts for the API request
             contents: list[Any] = [self.prompt]
             
-            # Add screenshot as context if enabled and on macOS
-            if self.use_context_screenshot:
-                # Import later to avoid an import error for this optional feature
-                from uttertype.context_screenshot import capture_active_window
-                screenshot = capture_active_window()
-                if screenshot:
-                    # Add context about the screenshot before the audio
-                    contents.append("The image below shows the active window on the user's screen "
-                                   "when they were speaking. Use this visual context to help with "
-                                   "transcription accuracy, especially for technical terms that "
-                                   "may be visible in the image.")
-                    
-                    # Add the PIL Image directly to the contents
-                    contents.append(screenshot)
+            # Add screenshot as context if available
+            if self.context_screenshot:
+                # Add context about the screenshot before the audio
+                contents.append("The image below shows the active window on the user's screen "
+                               "when they were speaking. Use this visual context to help with "
+                               "transcription accuracy, especially for technical terms that "
+                               "may be visible in the image.")
+                
+                # Add the PIL Image directly to the contents
+                contents.append(self.context_screenshot)
             
             # Add the audio as the final content part
             contents.append(types.Part.from_bytes(
