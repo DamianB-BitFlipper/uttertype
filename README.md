@@ -188,6 +188,19 @@ For Windows, use `$env:` instead of `export`.
 #### Advanced Configuration Options
 
 <details>
+<summary><b>Minimum Recording Duration</b></summary>
+
+You can set a minimum duration threshold for recordings to prevent accidental transcriptions from quick hotkey presses:
+
+```env
+# Set minimum recording duration to 300ms (default)
+UTTERTYPE_MIN_RECORDING_MS=300
+```
+
+This is useful if you want to use the hotkey button for other purposes when pressed quickly (i.e., not held down). Any recording shorter than this duration will be ignored.
+</details>
+
+<details>
 <summary><b>Google Vertex AI</b></summary>
 
 For enterprise Google Vertex AI integration:

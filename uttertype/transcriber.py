@@ -20,6 +20,10 @@ CHUNK_DURATION_MS = 30  # Frame duration in milliseconds
 CHUNK = int(RATE * CHUNK_DURATION_MS / 1000)
 # Minimum duration of speech to send to API between gaps of silence (hard-coded to 10 seconds)
 MIN_TRANSCRIPTION_SIZE_MS = 10000
+# Minimum duration of recording to process (in milliseconds)
+# Recordings shorter than this will be ignored (useful for preventing
+# accidental transcriptions from quick hotkey presses)
+MIN_RECORDING_DURATION_MS = int(os.getenv('UTTERTYPE_MIN_RECORDING_MS', 300))
 
 
 class AudioTranscriber:
@@ -79,6 +83,16 @@ class AudioTranscriber:
     def stop_recording(self):
         """Stop the recording and reset variables"""
         self.recording_finished.set()
+        
+        # Skip processing if recording is too short (e.g., accidental key press)
+        if self.audio_duration < MIN_RECORDING_DURATION_MS:
+            # Reset variables without processing
+            self.frames = []
+            self.audio_duration = 0
+            self.rolling_requests = []
+            self.rolling_transcriptions = []
+            return
+            
         self._finish_transcription()
         self.frames = []
         self.audio_duration = 0
