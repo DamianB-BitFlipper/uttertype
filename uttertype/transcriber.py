@@ -12,14 +12,16 @@ import tempfile
 from textwrap import dedent
 from google import genai
 from google.genai import types
+from pydantic import BaseModel
 
 FORMAT = pyaudio.paInt16  # Audio format
 CHANNELS = 1  # Mono audio
 RATE = 16000  # Sample rate
 CHUNK_DURATION_MS = 30  # Frame duration in milliseconds
 CHUNK = int(RATE * CHUNK_DURATION_MS / 1000)
-# Minimum duration of speech to send to API between gaps of silence (hard-coded to 10 seconds)
-MIN_TRANSCRIPTION_SIZE_MS = 10000
+# Minimum duration of speech to send to API as a chunk between gaps of silence
+# (hard-coded to 10 seconds)
+MIN_TRANSCRIPTION_CHUNK_SIZE_MS = 10000
 # Minimum duration of recording to process (in milliseconds)
 # Recordings shorter than this will be ignored (useful for preventing
 # accidental transcriptions from quick hotkey presses)
@@ -65,7 +67,7 @@ class AudioTranscriber:
                 current_audio_duration = len(self.frames) * CHUNK_DURATION_MS
                 if (
                     not is_speech
-                    and current_audio_duration >= MIN_TRANSCRIPTION_SIZE_MS
+                    and current_audio_duration >= MIN_TRANSCRIPTION_CHUNK_SIZE_MS
                 ):  # silence
                     rolling_request = Thread(
                         target=self._intermediate_transcription,
@@ -272,6 +274,9 @@ class GeminiTranscriber(AudioTranscriber):
         Expected Transcription: "The art of doing science."
         </EXAMPLE>
 
+        Note:
+        Before transcribing the input audio, you have to make a determination if the audio contains any dictation audio. You may hear silence or music. In this case, set the `is_there_dictation` to False. If you hear a dictation, set this to `True` and transcribe the dictation.
+
         Below will follow the audio.
         """)
 
@@ -295,7 +300,11 @@ class GeminiTranscriber(AudioTranscriber):
         try:
             # Get the audio bytes directly from the BytesIO object
             audio_bytes = audio.getvalue()
-            
+
+            class TranscriptionOut(BaseModel):
+              is_there_dictation: bool
+              transcription: str
+
             # Send to Gemini API
             response = self.client.models.generate_content(
                 model=self.model_name,
@@ -305,11 +314,19 @@ class GeminiTranscriber(AudioTranscriber):
                         data=audio_bytes,
                         mime_type='audio/wav',
                     ),
-                ]
+                ],
+                config={
+                    'response_mime_type': 'application/json',
+                    'response_schema': TranscriptionOut,
+                },
             )
 
+            # No dictation was detected, so return empty string
+            if not response.parsed.is_there_dictation:
+                return ""
+
             # Extract transcription from response
-            transcription = response.text.strip()
+            transcription = response.parsed.transcription.strip()
             return transcription
             
         except Exception as e:
