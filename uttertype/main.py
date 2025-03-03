@@ -4,7 +4,7 @@ load_dotenv()  # Load environment variables up front
 import asyncio
 import os
 from pynput import keyboard
-from uttertype.transcriber import WhisperAPITranscriber, GeminiTranscriber, WhisperLocalMLXTranscriber
+from uttertype.transcribers import WhisperAPITranscriber, GeminiTranscriber, WhisperLocalMLXTranscriber
 from uttertype.table_interface import ConsoleTable
 from uttertype.key_listener import create_keylistener
 from uttertype.utils import manual_type
