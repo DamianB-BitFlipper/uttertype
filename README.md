@@ -265,6 +265,24 @@ Available models with speed/accuracy tradeoffs:
 | `large-v2` | Extra large | Multilingual | ★★ | ★★★★★ |
 </details>
 
+<details>
+<summary><b>macOS Context Screenshot</b></summary>
+
+UtterType can capture screenshots of the active window on macOS for context-aware transcription:
+
+1. Install the macOS-specific dependencies:
+   ```bash
+   uv sync --extra macos
+   ```
+   
+2. This enables the `capture_active_window()` function in `context_screenshot.py` which:
+   - Returns a PIL Image of the currently active window
+   - Returns None on non-macOS platforms or if dependencies are missing
+   - Uses mss for screen capture and Pillow for image processing
+
+The screenshot functionality can be useful for providing visual context in context-aware transcription scenarios.
+</details>
+
 ### 5. Launch UtterType
 
 <details open>
