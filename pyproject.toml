@@ -27,6 +27,7 @@ dependencies = [
 
 [project.optional-dependencies]
 mlx = ["lightning-whisper-mlx"]
+macos = ["mss", "Pillow"]
 
 [project.scripts]
 uttertype = "uttertype.main:run_app"
