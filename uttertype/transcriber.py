@@ -38,10 +38,13 @@ class AudioTranscriber:
         self.event_loop = asyncio.get_event_loop()
         self.vad = webrtcvad.Vad(1)  # Voice Activity Detector, mode can be 0 to 3
         self.transcriptions = asyncio.Queue()
+        self.recording_canceled = False  # Flag to track if recording should be canceled
 
     def start_recording(self):
         """Start recording audio from the microphone."""
-
+        # Reset the canceled flag when starting a new recording
+        self.recording_canceled = False
+        
         # Start a new recording in the background, do not block
         def _record():
             self.recording_finished = Event()
@@ -84,13 +87,15 @@ class AudioTranscriber:
         """Stop the recording and reset variables"""
         self.recording_finished.set()
         
-        # Skip processing if recording is too short (e.g., accidental key press)
-        if self.audio_duration < MIN_RECORDING_DURATION_MS:
+        # Skip processing if recording is too short or was canceled
+        if self.audio_duration < MIN_RECORDING_DURATION_MS or self.recording_canceled:
             # Reset variables without processing
             self.frames = []
             self.audio_duration = 0
             self.rolling_requests = []
             self.rolling_transcriptions = []
+            # Reset canceled flag
+            self.recording_canceled = False
             return
             
         self._finish_transcription()
@@ -98,6 +103,8 @@ class AudioTranscriber:
         self.audio_duration = 0
         self.rolling_requests = []
         self.rolling_transcriptions = []
+        # Reset canceled flag
+        self.recording_canceled = False
 
     def _intermediate_transcription(self, idx, audio):
         intermediate_transcription = self.transcribe_audio(audio)
@@ -134,6 +141,10 @@ class AudioTranscriber:
         wf.writeframes(b"".join(self.frames))
         wf.close()
         return buffer
+        
+    def cancel_recording(self):
+        """Mark the current recording as canceled so it will not be processed"""
+        self.recording_canceled = True
 
     def transcribe_audio(self, audio: io.BytesIO) -> str:
         raise NotImplementedError("Please use a subclass of AudioTranscriber")

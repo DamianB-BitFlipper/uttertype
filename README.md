@@ -308,6 +308,10 @@ When first launching, you'll need to grant these permissions:
 3. Release the key when finished
 4. Your transcribed text will be inserted at the cursor position
 
+**Note:** The transcription will be automatically canceled in two cases:
+- If the hotkey is pressed and released quickly (less than 300ms by default)
+- If another key is pressed while the hotkey is being held down (useful for key combinations like Function+Delete)
+
 ## Troubleshooting
 
 <details>
