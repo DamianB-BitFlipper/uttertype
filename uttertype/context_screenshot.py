@@ -101,3 +101,16 @@ def capture_active_window(max_dimension: int = 1200) -> Optional[Image.Image]:
     except Exception as e:
         print(f"Error capturing screenshot: {e}")
         return None
+
+
+if __name__ == "__main__":
+    # Test the functionality
+    if sys.platform == 'darwin':
+        img = capture_active_window(max_dimension=1600)  # Test with a smaller max dimension
+        if img:
+            print(f"Screenshot captured: {img.width}x{img.height}")
+            img.show()  # Display the image
+        else:
+            print("Failed to capture screenshot")
+    else:
+        print("This functionality is only available on macOS")
