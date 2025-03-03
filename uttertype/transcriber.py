@@ -22,7 +22,7 @@ CHUNK = int(RATE * CHUNK_DURATION_MS / 1000)
 MIN_TRANSCRIPTION_SIZE_MS = 10000
 # Minimum duration of recording to process (in milliseconds)
 # Recordings shorter than this will be ignored (useful for accidental key presses)
-MIN_RECORDING_DURATION_MS = int(os.getenv('UTTERTYPE_MIN_RECORDING_MS', 500))
+MIN_RECORDING_DURATION_MS = int(os.getenv('UTTERTYPE_MIN_RECORDING_MS', 300))
 
 
 class AudioTranscriber:

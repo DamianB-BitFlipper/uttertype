@@ -193,8 +193,8 @@ For Windows, use `$env:` instead of `export`.
 You can set a minimum duration threshold for recordings to prevent accidental transcriptions from quick hotkey presses:
 
 ```env
-# Set minimum recording duration to 500ms (default)
-UTTERTYPE_MIN_RECORDING_MS=500
+# Set minimum recording duration to 300ms (default)
+UTTERTYPE_MIN_RECORDING_MS=300
 ```
 
 This is useful if you want to use the hotkey button for other purposes when pressed quickly (i.e., not held down). Any recording shorter than this duration will be ignored.
