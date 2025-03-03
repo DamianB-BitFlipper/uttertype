@@ -27,3 +27,8 @@ OPENAI_MODEL_NAME="whisper-1"
 
 # UTTERTYPE_RECORD_HOTKEYS="<ctrl>+<alt>+v" # defaults to <globe> on Mac, <ctrl>+<alt>+v otherwise
 # See https://pynput.readthedocs.io/en/latest/keyboard.html#global-hotkeys for other options
+
+# Minimum recording duration in milliseconds (default: 500)
+# Recordings shorter than this will be ignored, useful for preventing
+# accidental transcriptions from quick hotkey presses
+# UTTERTYPE_MIN_RECORDING_MS=500
