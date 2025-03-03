@@ -6,7 +6,6 @@ from pynput.keyboard import HotKey
 class HoldHotKey(HotKey):
     def __init__(self, keys, on_activate, on_deactivate, on_other_key):
         self.active = False
-        self.transcriber = None  # Will be set in create_keylistener
 
         def _mod_on_activate():
             self.active = True
@@ -22,26 +21,26 @@ class HoldHotKey(HotKey):
 
     def press(self, key):
         # Check if the hotkey is active and another key is being pressed
-        if self.active:
-            # Convert keys to a set for easier comparison
-            hotkey_keys_set = set(self._keys)
-            # Check if the pressed key is not part of the hotkey
-            if hasattr(key, 'vk') and key not in hotkey_keys_set:
-                # Another key was pressed during recording, cancel it
-                self._on_other_key()
+        if self.active and key not in self._keys:
+            # Another key was pressed during recording, cancel it
+            self._on_other_key()
         
         # Continue with normal processing
         super().press(key)
 
     def release(self, key):
         super().release(key)
+        # The `self._state != self._keys` happens when at least
+        # one of the hot-keys is no longer pressed
         if self.active and self._state != self._keys:
             self._on_deactivate()
 
 
 class HoldGlobeKey:
     """
-    For macOS only, globe key requires special handling
+    For macOS only, globe key requires special handling.
+
+    Specifically, it only triggers the `release` event.
     """
 
     def __init__(self, on_activate, on_deactivate, on_other_key):
@@ -49,7 +48,6 @@ class HoldGlobeKey:
         self._on_activate = on_activate
         self._on_deactivate = on_deactivate
         self._on_other_key = on_other_key
-        self.last_key_vk = None  # Track the last pressed key's vk code
 
     def press(self, key):
         if hasattr(key, "vk"):
@@ -59,11 +57,10 @@ class HoldGlobeKey:
                 else:  # hold started
                     self._on_activate()
                 self.held = not self.held
-                self.last_key_vk = key.vk
-            elif self.held and key.vk != 63 and key.vk != self.last_key_vk:
-                # A different key was pressed while globe key is held
-                # Cancel the recording
-                self._on_other_key()
+
+        # Some other key was pressed while the globe key is held
+        if self.held and getattr(key, "vk", 0) != 63:
+            self._on_other_key()
 
     def release(self, key):
         """Press and release signals are mixed for globe key"""
@@ -72,23 +69,23 @@ class HoldGlobeKey:
             self.press(key)
 
 
-def create_keylistener(transcriber, env_var="UTTERTYPE_RECORD_HOTKEYS"):
-    key_code = os.getenv(env_var, "")
+def create_keylistener(transcriber):
+    key_code = os.getenv(
+        "UTTERTYPE_RECORD_HOTKEYS",
+        "<globe>" if sys.platform == "darwin" else "<ctrl>+<alt>+v"
+    )
 
-    if (sys.platform == "darwin") and (key_code in ["<globe>", ""]):
+    # The globe key needs special hot-key handling
+    if key_code == "<globe>":
         return HoldGlobeKey(
             on_activate=transcriber.start_recording,
             on_deactivate=transcriber.stop_recording,
             on_other_key=transcriber.cancel_recording,
         )
 
-    key_code = key_code if key_code else "<ctrl>+<alt>+v"
-
-    hotkey = HoldHotKey(
+    return HoldHotKey(
           HoldHotKey.parse(key_code),
           on_activate=transcriber.start_recording,
           on_deactivate=transcriber.stop_recording,
           on_other_key=transcriber.cancel_recording,
       )
-      
-    return hotkey
