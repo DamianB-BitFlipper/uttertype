@@ -24,12 +24,17 @@ else:
         class Image:
             pass
 
-def capture_active_window() -> Optional[Image.Image]:
+def capture_active_window(max_dimension: int = 1200) -> Optional[Image.Image]:
     """
     Capture a screenshot of the currently active window on macOS.
     
+    Args:
+        max_dimension: Maximum width or height of the returned image, preserving aspect ratio.
+                     Defaults to 1200 pixels.
+    
     Returns:
         PIL Image object if successful, None otherwise or on non-macOS platforms.
+        The image will be scaled down to fit within max_dimension while preserving aspect ratio.
     """
     # Check if we're on macOS
     if sys.platform != 'darwin':
@@ -81,21 +86,18 @@ def capture_active_window() -> Optional[Image.Image]:
             screenshot = sct.grab(monitor)
             # Convert to PIL Image
             img = Image.frombytes("RGB", screenshot.size, screenshot.bgra, "raw", "BGRX")
+            
+            # Resize the image if it's larger than max_dimension
+            width, height = img.size
+            if width > max_dimension or height > max_dimension:
+                # Calculate the scaling factor to preserve aspect ratio
+                scale_factor = min(max_dimension / width, max_dimension / height)
+                new_width = int(width * scale_factor)
+                new_height = int(height * scale_factor)
+                img = img.resize((new_width, new_height), Image.LANCZOS)
+                
             return img
             
     except Exception as e:
         print(f"Error capturing screenshot: {e}")
         return None
-
-
-if __name__ == "__main__":
-    # Test the functionality
-    if sys.platform == 'darwin':
-        img = capture_active_window()
-        if img:
-            print(f"Screenshot captured: {img.width}x{img.height}")
-            img.show()  # Display the image
-        else:
-            print("Failed to capture screenshot")
-    else:
-        print("This functionality is only available on macOS")
