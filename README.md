@@ -180,6 +180,7 @@ export HF_TOKEN="your-huggingface-token"
 ```bash
 export UTTERTYPE_PROVIDER="google"
 export GEMINI_API_KEY="your-api-key-here"
+export GEMINI_USE_CONTEXT_SCREENSHOT="true"  # Optional, macOS only
 ```
 
 For Windows, use `$env:` instead of `export`.
@@ -213,9 +214,30 @@ For enterprise Google Vertex AI integration:
    GEMINI_USE_VERTEX="true"
    GEMINI_PROJECT_ID="your-gcp-project-id"
    GEMINI_LOCATION="us-central1"  # optional
+   GEMINI_USE_CONTEXT_SCREENSHOT="true"  # optional, macOS only
    ```
 
 See [Vertex AI docs](https://cloud.google.com/vertex-ai/docs/authentication) for more details.
+</details>
+
+<details>
+<summary><b>Context Screenshots (macOS only)</b></summary>
+
+On macOS, you can enhance transcription accuracy with visual context by enabling screenshots:
+
+1. Install the macOS dependencies:
+   ```bash
+   uv sync --extra macos
+   ```
+
+2. Enable in your `.env` file:
+   ```env
+   GEMINI_USE_CONTEXT_SCREENSHOT="true"
+   ```
+
+When enabled, UtterType will capture a screenshot of your active window when you speak and send it to Gemini along with your audio. This helps with transcribing technical terms, code, and other content visible on your screen.
+
+Note: This feature only works with Gemini transcription and requires macOS.
 </details>
 
 <details>

@@ -17,6 +17,7 @@ OPENAI_MODEL_NAME="whisper-1"
 # Uncomment and configure for Google Gemini API:
 # GEMINI_API_KEY="<your_api_key_here>"
 # GEMINI_MODEL_NAME="gemini-2.0-flash"
+# GEMINI_USE_CONTEXT_SCREENSHOT="false"  # Set to "true" to include screenshots (macOS only)
 
 # ===== Google Vertex AI Settings =====
 # Uncomment and configure for Google Vertex AI:
@@ -24,6 +25,7 @@ OPENAI_MODEL_NAME="whisper-1"
 # GEMINI_PROJECT_ID="<your_project_id>"
 # GEMINI_LOCATION="us-central1"
 # GEMINI_MODEL_NAME="gemini-2.0-flash"
+# GEMINI_USE_CONTEXT_SCREENSHOT="false"  # Set to "true" to include screenshots (macOS only)
 
 # UTTERTYPE_RECORD_HOTKEYS="<ctrl>+<alt>+v" # defaults to <globe> on Mac, <ctrl>+<alt>+v otherwise
 # See https://pynput.readthedocs.io/en/latest/keyboard.html#global-hotkeys for other options
