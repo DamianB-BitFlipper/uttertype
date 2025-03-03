@@ -41,6 +41,7 @@ class AudioTranscriber:
         self.vad = webrtcvad.Vad(1)  # Voice Activity Detector, mode can be 0 to 3
         self.transcriptions = asyncio.Queue()
         self.recording_canceled = False  # Flag to track if recording should be canceled
+        self.stream = None  # Initialize stream as None until needed
 
     def start_recording(self):
         """Start recording audio from the microphone."""
@@ -50,7 +51,8 @@ class AudioTranscriber:
         # Start a new recording in the background, do not block
         def _record():
             self.recording_finished = Event()
-            stream = self.audio.open(
+            # Create audio stream only when recording starts
+            self.stream = self.audio.open(
                 format=FORMAT,
                 channels=CHANNELS,
                 rate=RATE,
@@ -61,7 +63,7 @@ class AudioTranscriber:
             while (
                 not self.recording_finished.is_set()
             ):  # Keep recording until interrupted
-                data = stream.read(CHUNK)
+                data = self.stream.read(CHUNK)
                 self.audio_duration += CHUNK_DURATION_MS
                 is_speech = self.vad.is_speech(data, RATE)
                 current_audio_duration = len(self.frames) * CHUNK_DURATION_MS
@@ -81,6 +83,12 @@ class AudioTranscriber:
                     rolling_request.start()
                     intermediate_trancriptions_idx += 1
                 self.frames.append(data)
+            
+            # Close audio stream after recording is finished
+            if self.stream:
+                self.stream.stop_stream()
+                self.stream.close()
+                self.stream = None
 
         # start recording in a new non-blocking thread
         Thread(target=_record).start()
@@ -160,6 +168,18 @@ class AudioTranscriber:
             transcription = await self.transcriptions.get()
             yield transcription
             self.transcriptions.task_done()
+            
+    def cleanup(self):
+        """Clean up resources when shutting down."""
+        # Close the audio stream if it's open
+        if self.stream:
+            self.stream.stop_stream()
+            self.stream.close()
+            self.stream = None
+            
+        # Terminate PyAudio instance
+        if hasattr(self, 'audio') and self.audio:
+            self.audio.terminate()
 
 
 class WhisperAPITranscriber(AudioTranscriber):

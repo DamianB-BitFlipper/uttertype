@@ -24,15 +24,25 @@ async def main():
 
     hotkey = create_keylistener(transcriber)
 
-    keyboard.Listener(on_press=hotkey.press, on_release=hotkey.release).start()
-    console_table = ConsoleTable()
-    with console_table:
-        async for transcription, audio_duration_ms in transcriber.get_transcriptions():
-            manual_type(transcription.strip())
-            console_table.insert(
-                transcription,
-                round(0.0001 * audio_duration_ms / 1000, 6),
-            )
+    keyboard_listener = keyboard.Listener(on_press=hotkey.press, on_release=hotkey.release)
+    keyboard_listener.start()
+    
+    try:
+        console_table = ConsoleTable()
+        with console_table:
+            async for transcription, audio_duration_ms in transcriber.get_transcriptions():
+                manual_type(transcription)
+                console_table.insert(
+                    transcription,
+                    round(0.0001 * audio_duration_ms / 1000, 6),
+                )
+    except KeyboardInterrupt:
+        # Handle Ctrl+C gracefully
+        pass
+    finally:
+        # Clean up resources
+        keyboard_listener.stop()
+        transcriber.cleanup()
 
 
 def run_app():
