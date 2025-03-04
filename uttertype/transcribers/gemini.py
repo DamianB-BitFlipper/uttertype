@@ -191,7 +191,7 @@ class GeminiTranscriber(AudioTranscriber):
               transcription: str
 
             # Prepare the content parts for the API request
-            contents: list[Any] = [self.prompt]
+            contents: list[Any] = []
             
             # Add screenshot as context if available
             if self.context_screenshot:
@@ -203,7 +203,9 @@ class GeminiTranscriber(AudioTranscriber):
                 
                 # Add the PIL Image directly to the contents
                 contents.append(self.context_screenshot)
-            
+
+            contents.append(self.prompt)
+
             # Add the audio as the final content part
             contents.append(types.Part.from_bytes(
                 data=audio_bytes,
@@ -220,6 +222,8 @@ class GeminiTranscriber(AudioTranscriber):
                 },
             )
 
+
+            print(f"--- {response.parsed.is_there_dictation}")
             # No dictation was detected, so return empty string
             if not response.parsed.is_there_dictation:
                 return ""
