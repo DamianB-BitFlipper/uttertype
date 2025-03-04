@@ -120,7 +120,7 @@ class GeminiTranscriber(AudioTranscriber):
         # Only capture screenshot if the feature is enabled
         if self.use_context_screenshot and self._capture_active_window_fn:
             # Capture screenshot in a background thread to avoid adding latency
-            threading.Thread(target=self._capture_screenshot_background).start()
+            threading.Thread(target=self._capture_screenshot_background, daemon=True).start()
             
         # Call the parent implementation to start recording
         super().start_recording()
@@ -159,6 +159,16 @@ class GeminiTranscriber(AudioTranscriber):
             use_context_screenshot=use_context_screenshot
         )
     
+    def stop_recording(self):
+        """
+        Override to clean up resources when recording stops.
+        """
+        # Call the parent implementation to stop recording
+        super().stop_recording()
+        
+        # Clean up screenshot after recording is complete
+        self.context_screenshot = None
+        
     def transcribe_audio(self, audio: io.BytesIO) -> str:
         """
         Transcribe audio using Google Gemini API.
