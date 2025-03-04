@@ -13,15 +13,6 @@ from google import genai
 from google.genai import types
 from uttertype.transcribers.base import AudioTranscriber
 
-# Conditionally import the context_screenshot module
-if sys.platform == 'darwin':
-    try:
-        from uttertype.context_screenshot import capture_active_window
-    except ImportError:
-        capture_active_window = None
-else:
-    capture_active_window = None
-
 class GeminiTranscriber(AudioTranscriber):
     """
     Transcriber implementation using Google's Gemini API.
@@ -64,6 +55,7 @@ class GeminiTranscriber(AudioTranscriber):
         self.model_name = model
         self.use_context_screenshot = use_context_screenshot
 
+
         # Lazily try to import the capture_active_window function
         if self.use_context_screenshot and sys.platform == 'darwin':
             try:
@@ -73,10 +65,10 @@ class GeminiTranscriber(AudioTranscriber):
                 self._capture_active_window_fn = None
         else:
             self._capture_active_window_fn = None
+        self.screenshot_thread = None
 
         # Will store the screenshot taken at recording start
         self.context_screenshot = None
-        self.screenshot_thread = None
         self.prompt = dedent("""\
         Audio Transcription Guidelines
 
