@@ -196,10 +196,13 @@ class GeminiTranscriber(AudioTranscriber):
             # Add screenshot as context if available
             if self.context_screenshot:
                 # Add context about the screenshot before the audio
-                contents.append("The image below shows the active window on the user's screen "
-                               "when they were speaking. Use this visual context to help with "
-                               "transcription accuracy, especially for technical terms that "
-                               "may be visible in the image.")
+                screenshot_context = dedent("""\
+                The image below shows the active window on the user's screen
+                when they were speaking. Use this visual context to help with
+                transcription accuracy, especially for technical terms that
+                may be visible in the image.
+                """)
+                contents.append(screenshot_context)
                 
                 # Add the PIL Image directly to the contents
                 contents.append(self.context_screenshot)
