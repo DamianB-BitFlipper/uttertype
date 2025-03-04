@@ -62,30 +62,20 @@ class GeminiTranscriber(AudioTranscriber):
             self.client = genai.Client(api_key=api_key)
         
         self.model_name = model
-        self.use_context_screenshot = use_context_screenshot and capture_active_window is not None
-        self.context_screenshot = None  # Will store the screenshot taken at recording start
-        
-    def start_recording(self):
-        """
-        Override to capture a screenshot when recording starts.
-        """
-        # Only capture screenshot if the feature is enabled
-        if self.use_context_screenshot:
-            # Capture screenshot in a background thread to avoid adding latency
-            threading.Thread(target=self._capture_screenshot_background).start()
-            
-        # Call the parent implementation to start recording
-        super().start_recording()
-        
-    def _capture_screenshot_background(self):
-        """
-        Capture a screenshot in a background thread.
-        """
-        try:
-            self.context_screenshot = capture_active_window()
-        except Exception as e:
-            print(f"Error capturing screenshot: {e}")
-            self.context_screenshot = None
+        self.use_context_screenshot = use_context_screenshot
+
+        # Lazily try to import the capture_active_window function
+        if self.use_context_screenshot and sys.platform == 'darwin':
+            try:
+                from uttertype.context_screenshot import capture_active_window
+                self._capture_active_window_fn = capture_active_window
+            except ImportError:
+                self._capture_active_window_fn = None
+        else:
+            self._capture_active_window_fn = None
+
+        # Will store the screenshot taken at recording start
+        self.context_screenshot = None
         self.prompt = dedent("""\
         Audio Transcription Guidelines
 
@@ -122,6 +112,28 @@ class GeminiTranscriber(AudioTranscriber):
 
         Below will follow the audio.
         """)
+        
+    def start_recording(self):
+        """
+        Override to capture a screenshot when recording starts.
+        """
+        # Only capture screenshot if the feature is enabled
+        if self.use_context_screenshot and self._capture_active_window_fn:
+            # Capture screenshot in a background thread to avoid adding latency
+            threading.Thread(target=self._capture_screenshot_background).start()
+            
+        # Call the parent implementation to start recording
+        super().start_recording()
+        
+    def _capture_screenshot_background(self):
+        """
+        Capture a screenshot in a background thread.
+        """
+        try:
+            self.context_screenshot = self._capture_active_window_fn()
+        except Exception as e:
+            print(f"Error capturing screenshot: {e}")
+            self.context_screenshot = None
 
     @staticmethod
     def create(*args, **kwargs):

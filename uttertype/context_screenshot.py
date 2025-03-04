@@ -18,6 +18,7 @@ if sys.platform == 'darwin':
         from PIL import Image
     except ImportError:
         print("Pillow not installed. Install with: uv sync --extra macos")
+        raise
 else:
     # Define Image class for type hints on non-macOS
     class Image:
