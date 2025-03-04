@@ -101,7 +101,7 @@ class GeminiTranscriber(AudioTranscriber):
         </EXAMPLE>
 
         Note:
-        Before transcribing the input audio, you have to make a determination if the audio contains any dictation audio. You may hear silence or music. In this case, set the `is_there_dictation` to False. If you hear a dictation, set this to `True` and transcribe the dictation.
+        Before transcribing the input audio, analyze only the audio data provided to determine if it contains dictation. Disregard any non-audio information. First, provide brief reasoning in the `reasoning_is_there_dictation` field explaining what you heard in the audio. Dictation means human speech intended to be transcribed. If you hear only silence, music, or non-speech sounds, set `is_there_dictation` to False. If you hear clear human speech dictation, set `is_there_dictation` to True and provide a complete transcription of all spoken content. Your response should include your reasoning, the boolean determination, and the transcription if dictation is present.
 
         Below will follow the audio.
         """)
@@ -187,23 +187,21 @@ class GeminiTranscriber(AudioTranscriber):
             audio_bytes = audio.getvalue()
 
             class TranscriptionOut(BaseModel):
-              is_there_dictation: bool
-              transcription: str
+                reasoning_is_there_dictation: str
+                is_there_dictation: bool
+                transcription: str
 
             # Prepare the content parts for the API request
             contents: list[Any] = []
             
             # Add screenshot as context if available
-            if self.context_screenshot:
+            if self.context_screenshot and False:
                 # Add context about the screenshot before the audio
-                screenshot_context = dedent("""\
-                The image below shows the active window on the user's screen
-                when they were speaking. Use this visual context to help with
-                transcription accuracy, especially for technical terms that
-                may be visible in the image.
-                """)
-                contents.append(screenshot_context)
-                
+                contents.append("""\
+                The image below shows the active window on the user's screen when they were speaking. Use this visual context to help with transcription accuracy, especially for technical terms that may be visible in the image.
+
+                Important! When making the determination of `is_there_dictation` disregard the visual data and use only the audio data.""")
+
                 # Add the PIL Image directly to the contents
                 contents.append(self.context_screenshot)
 
@@ -226,6 +224,7 @@ class GeminiTranscriber(AudioTranscriber):
             )
 
 
+            print(f"--- {response.parsed.reasoning_is_there_dictation}")
             print(f"--- {response.parsed.is_there_dictation}")
             # No dictation was detected, so return empty string
             if not response.parsed.is_there_dictation:
