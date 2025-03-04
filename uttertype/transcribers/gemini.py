@@ -76,6 +76,7 @@ class GeminiTranscriber(AudioTranscriber):
 
         # Will store the screenshot taken at recording start
         self.context_screenshot = None
+        self.screenshot_thread = None
         self.prompt = dedent("""\
         Audio Transcription Guidelines
 
@@ -120,7 +121,8 @@ class GeminiTranscriber(AudioTranscriber):
         # Only capture screenshot if the feature is enabled
         if self.use_context_screenshot and self._capture_active_window_fn:
             # Capture screenshot in a background thread to avoid adding latency
-            threading.Thread(target=self._capture_screenshot_background, daemon=True).start()
+            self.screenshot_thread = threading.Thread(target=self._capture_screenshot_background, daemon=True)
+            self.screenshot_thread.start()
             
         # Call the parent implementation to start recording
         super().start_recording()
@@ -184,6 +186,11 @@ class GeminiTranscriber(AudioTranscriber):
             of recording will be included with each audio segment.
         """
         try:
+            # If we have a screenshot thread running, make sure it's complete before proceeding
+            if self.screenshot_thread and self.screenshot_thread.is_alive():
+                # Wait for the screenshot to be captured
+                self.screenshot_thread.join(timeout=0.5)  # Wait up to 0.5 seconds
+            
             # Get the audio bytes directly from the BytesIO object
             audio_bytes = audio.getvalue()
 
